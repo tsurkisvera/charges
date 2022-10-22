@@ -2,15 +2,19 @@
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
+#include <fstream>
 
 using namespace std;
 
-const int semicircle = 100; const int number = 2 * semicircle; const double a = 1; const double b = 1;
+const int semicircle = 20; const int number = 2 * semicircle; const double a = 1; const double b = 1;
 const double k = 1.e-4; const double epsilon = 1.e-6;
 
 class Points{
 private:
     double points[number][2];
+    double forces[number][2];  
+    double normal[number][2]; 
+    double forces_tangential[number][2];
 
 public:
 
@@ -18,13 +22,15 @@ public:
         for (int i=0; i<number; i++){
             points[i][0] = arr_rnd[i][0];
             points[i][1] = arr_rnd[i][1];
+            forces[i][0] = 0; forces[i][1] = 0;
+            normal[i][0 ]= 0; normal[i][1] = 0;
+            forces_tangential[i][0] = 0; forces_tangential[i][1] = 0;
         }    
     }
 
     ~Points(){}
 
-     double (*count_forces ())[2] {
-        double forces[number][2];
+     void count_forces () {
         for(int k=0; k<number; k++){
             double force_x = 0; double force_y = 0;
             for(int j=0; j<number; j++){
@@ -36,7 +42,6 @@ public:
             forces[k][0] = force_x; 
             forces[k][1] = force_y;
         }
-        return forces;
     }
 
     double potential_energy(){
@@ -48,17 +53,14 @@ public:
         return energy;
     }
 
-    double (*count_normal ())[2]{
-        double normal[number][2];
+    void count_normal () {
         for(int j=0; j<number; j++){
            normal[j][0] =  (points[j][0] / pow(a, 2)) / pow(pow(points[j][0] / pow(a, 2), 2) + pow(points[j][1] / pow(b, 2), 2), 0.5);
            normal[j][1] =  (points[j][1] / pow(b, 2)) / pow(pow(points[j][0] / pow(a, 2), 2) + pow(points[j][1] / pow(b, 2), 2), 0.5);
-        }
-        return normal;     
+        }    
     }
 
-    double (*count_forces_tangential (double(*forces)[2], double(*normal)[2]))[2]{
-        double forces_tangential[number][2];
+    void count_forces_tangential () {
         double force_n[2];
         for(int i=0; i<number; i++){
             force_n[0] = (forces[i][0] * normal[i][0] + forces[i][1] * normal[i][1]) * normal[i][0];
@@ -66,10 +68,9 @@ public:
             forces_tangential[i][0] = forces[i][0] - force_n[0];
             forces_tangential[i][1] = forces[i][1] - force_n[1];
         }
-        return forces_tangential;
     }
 
-    double (*change_points (double(*forces_tangential)[2]))[2]{
+    void change_points () {
         for(int i=0; i<number; i++){
             points[i][0] += k * forces_tangential[i][0];
             points[i][1] += k * forces_tangential[i][1];
@@ -77,7 +78,6 @@ public:
             points[i][0] *= scaling_factor;
             points[i][1] *= scaling_factor;
         }
-        return points;
     }
 
     friend std::ostream& operator<< (std::ostream &out, const Points &points);
@@ -112,45 +112,32 @@ int main(){
     } 
 
     Points p = Points(arr_rnd);
+
+    ofstream file;
+    file.open("initial_points.txt");
+    file << p;
+    file.close();
+ 
     double energy_previous = p.potential_energy();
-    double energy_current = 0.0;
-    cout << static_cast<double> (energy_previous);
+    double energy_current = 0;
+    cout << energy_previous << ' ' << energy_current << endl;
+    cout << energy_current << endl;
 
-    double forces[number][2];
-    double normal[number][2];
-    double forces_tangential[number][2];
-    double points_new[number][2];
-
-    while((abs(energy_previous - energy_current) / energy_current) > epsilon){
-
-        for(int i=0; i<number; i++){
-            forces[i][0] = p.count_forces()[i][0]; forces[i][1] = p.count_forces()[i][1];
-        }
-    
-        for(int i=0; i<number; i++){
-            normal[i][0] = p.count_normal()[i][0]; normal[i][1] = p.count_normal()[i][1];
-        }
-
-        for(int i=0; i<number; i++){
-            forces_tangential[i][0] = p.count_forces_tangential(forces, normal)[i][0]; forces_tangential[i][1] = p.count_forces_tangential(forces, normal)[i][1];
-        }
-
-        for(int i=0; i<number; i++){
-            points_new[i][0] = p.change_points(forces_tangential)[i][0]; points_new[i][1] = p.change_points(forces_tangential)[i][1];
-        }
-
-        for(int i=0; i<number; i++){
-            arr_rnd[i][0] = points_new[i][0]; arr_rnd[i][1] = points_new[i][1];
-        }
-
-        Points p_new = Points(arr_rnd);
-        p = p_new;
-        double tmp = energy_current;
-        energy_previous = tmp;
+    while(abs(energy_previous - energy_current) / energy_previous > epsilon){
+        energy_previous = p.potential_energy();
+        p.count_forces();
+        p.count_normal();
+        p.count_forces_tangential();
+        p.change_points();
         energy_current = p.potential_energy();
     }
 
-    cout << static_cast<double> (energy_current);
+    cout << energy_previous << ' ' << energy_current << endl;
+    
+    ofstream file_result;
+    file_result.open("initial_points.txt");
+    file_result << p;
+    file_result.close();
 
     return 0;
 }
