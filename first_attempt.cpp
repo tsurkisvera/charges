@@ -8,6 +8,7 @@ using namespace std;
 
 const int semicircle = 20; const int number = 2 * semicircle; const double a = 1; const double b = 1;
 const double k = 1.e-4; const double epsilon = 1.e-6;
+const double pi = acos(-1.0);
 
 class Points{
 private:
@@ -98,7 +99,7 @@ int main(){
     srand (static_cast <unsigned> (time(0)));
     
 	for (int i=0; i<semicircle; i++){
-        double alpha = static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
+        double alpha = 2 * pi * static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
         double x = a*b*tan(alpha)/pow(a*a + b*b*tan(alpha)*tan(alpha), 0.5);
         double y = x / tan(alpha);
         arr_rnd[i][0] = x; arr_rnd[i][1] = y;
@@ -135,7 +136,7 @@ int main(){
     cout << energy_previous << ' ' << energy_current << endl;
     
     ofstream file_result;
-    file_result.open("initial_points.txt");
+    file_result.open("result_points.txt");
     file_result << p;
     file_result.close();
 
